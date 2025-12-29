@@ -28,8 +28,16 @@ public class SecurityConfig {
                 }))
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/login", "/api/auth/test").permitAll()
-                        .anyRequest().authenticated())
+                        // 1. Unsecured API endpoints (Login, Register)
+                        .requestMatchers("/api/auth/**").permitAll()
+
+                        // 2. Secured API endpoints (All other backend data)
+                        .requestMatchers("/api/**").authenticated()
+
+                        // 3. Frontend Routes & Static Resources (Everything else)
+                        // This allows /dashboard, /stock, etc. to pass through to SpaController
+                        .anyRequest().permitAll())
+
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
         http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);

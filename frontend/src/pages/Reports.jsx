@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import api from '../api';
 import { Download, Calendar, Filter } from 'lucide-react';
+import { utils, writeFile } from 'xlsx';
 
 const Reports = () => {
     const [activeTab, setActiveTab] = useState('stock');
@@ -40,53 +41,58 @@ const Reports = () => {
         }
     };
 
-    const downloadCSV = () => {
+    const downloadExcel = () => {
         if (!data.length) return alert("No data to download");
 
-        let headers = [];
-        let rows = [];
+        let exportData = [];
 
         if (activeTab === 'stock') {
-            headers = ['Date', 'Type', 'Item', 'Quantity', 'Party', 'Location'];
-            rows = data.map(d => [
-                d.movementDate,
-                d.movementType,
-                d.storageStock?.item?.name || '-',
-                d.quantity,
-                d.party?.name || '-',
-                d.storageStock?.storageLocation?.name || '-'
-            ]);
+            exportData = data.map(d => ({
+                Date: d.movementDate,
+                Type: d.movementType,
+                Item: d.storageStock?.item?.name || '-',
+                Quantity: d.quantity,
+                Party: d.party?.name || '-',
+                Location: d.storageStock?.storageLocation?.name || '-'
+            }));
         } else if (activeTab === 'badminton') {
-            headers = ['Date', 'Type', 'Quantity', 'Sold To'];
-            rows = data.map(d => [
-                d.date,
-                d.type,
-                d.quantity,
-                d.soldTo || '-'
-            ]);
+            exportData = data.map(d => ({
+                Date: d.date,
+                Type: d.type,
+                Quantity: d.quantity,
+                'Sold To': d.soldTo || '-'
+            }));
         } else {
-            headers = ['Date', 'Player', 'Type', 'Amount', 'Status', 'Details'];
-            rows = data.map(d => [
-                d.paymentDate,
-                d.playerName,
-                d.feeType || 'BATCH',
-                d.amount,
-                d.status,
-                d.feeType === 'GUEST' ? `${d.durationHours} hrs (Ct ${d.courtNumber})` : `${d.month} ${d.year}`
-            ]);
+            exportData = data.map(d => ({
+                Date: d.paymentDate,
+                Player: d.playerName,
+                Type: d.feeType || 'BATCH',
+                Amount: d.amount,
+                Status: d.status,
+                Details: d.feeType === 'GUEST' ? `${d.durationHours} hrs (Ct ${d.courtNumber})` : `${d.month} ${d.year}`
+            }));
         }
 
-        const csvContent = [
-            headers.join(','),
-            ...rows.map(row => row.map(item => `"${item}"`).join(','))
-        ].join('\n');
+        // Create Worksheet
+        const ws = utils.json_to_sheet(exportData);
 
-        const blob = new Blob([csvContent], { type: 'text/csv' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${activeTab}_report_${startDate}_to_${endDate}.csv`;
-        a.click();
+        // precise column widths to solve "######"
+        const colWidths = [
+            { wch: 15 }, // Date
+            { wch: 20 }, // Type / Player
+            { wch: 20 }, // Item / Details
+            { wch: 10 }, // Qty / Amount
+            { wch: 20 }, // Party / Status
+            { wch: 20 }  // Location
+        ];
+        ws['!cols'] = colWidths;
+
+        // Create Workbook
+        const wb = utils.book_new();
+        utils.book_append_sheet(wb, ws, "Report");
+
+        // Download
+        writeFile(wb, `${activeTab}_report_${startDate}.xlsx`);
     };
 
     return (
@@ -95,8 +101,8 @@ const Reports = () => {
             <div className="content-wrapper">
                 <div className="page-header">
                     <h1>Reports & Analytics</h1>
-                    <button className="btn btn-primary" onClick={downloadCSV}>
-                        <Download size={18} /> Download CSV
+                    <button className="btn btn-primary" onClick={downloadExcel}>
+                        <Download size={18} /> Download Excel
                     </button>
                 </div>
 

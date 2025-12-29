@@ -26,4 +26,12 @@ public class PlayerFeeService {
     public List<PlayerFee> getFeesByPlayer(String playerName) {
         return feeRepository.findByPlayerName(playerName);
     }
+
+    public List<PlayerFee> getFeesByMonth(String month, Integer year) {
+        return feeRepository.findByMonthAndYear(month, year);
+    }
+
+    public void deleteFee(Long id) {
+        feeRepository.deleteById(id);
+    }
 }

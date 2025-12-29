@@ -10,6 +10,10 @@ const Badminton = () => {
     const [showModal, setShowModal] = useState(false);
     const [modalMode, setModalMode] = useState(''); // 'addItem', 'sellItem', 'addFee'
 
+    // Month/Year Filter State
+    const [selectedMonth, setSelectedMonth] = useState('');
+    const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+
     // Form States
     const [newItem, setNewItem] = useState({ itemName: '', quantity: 0, details: '' });
     const [sellRequest, setSellRequest] = useState({ stockId: '', quantity: 1, soldTo: '' });
@@ -22,7 +26,7 @@ const Badminton = () => {
 
     useEffect(() => {
         fetchData();
-    }, [activeTab]);
+    }, [activeTab, selectedMonth, selectedYear]);
 
     const fetchData = async () => {
         try {
@@ -30,7 +34,12 @@ const Badminton = () => {
                 const res = await api.get('/badminton/stock');
                 setInventory(res.data);
             } else {
-                const res = await api.get('/player/fees');
+                // Fetch fees with optional month/year filter
+                let url = '/player/fees';
+                if (selectedMonth && selectedYear) {
+                    url += `/monthly?month=${selectedMonth}&year=${selectedYear}`;
+                }
+                const res = await api.get(url);
                 setFees(res.data);
             }
         } catch (err) { console.error("Fetch error", err); }
@@ -64,6 +73,15 @@ const Badminton = () => {
             setShowModal(false);
             fetchData();
         } catch (err) { alert('Failed to add fee'); }
+    };
+
+    const handleDeleteFee = async (feeId) => {
+        if (!window.confirm('Are you sure you want to delete this fee record?')) return;
+        try {
+            await api.delete(`/player/fee/${feeId}`);
+            fetchData();
+            alert('Fee deleted successfully');
+        } catch (err) { alert(`Failed to delete fee: ${err.response?.data?.message || err.message}`); }
     };
 
     const openModal = (mode, item = null) => {
@@ -136,7 +154,7 @@ const Badminton = () => {
                         </table>
                     ) : (
                         <table>
-                            <thead><tr><th>Date</th><th>Player / Guest</th><th>Type</th><th>Details</th><th>Amount</th><th>Status</th></tr></thead>
+                            <thead><tr><th>Date</th><th>Player / Guest</th><th>Type</th><th>Details</th><th>Amount</th><th>Status</th><th>Action</th></tr></thead>
                             <tbody>
                                 {fees.map(fee => (
                                     <tr key={fee.id}>
@@ -152,13 +170,33 @@ const Badminton = () => {
                                         </td>
                                         <td style={{ fontWeight: 'bold' }}>₹{fee.amount}</td>
                                         <td><span style={{ color: '#22c55e' }}>{fee.status}</span></td>
+                                        <td>
+                                            <button className="btn" style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem', background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444' }} onClick={() => handleDeleteFee(fee.id)}>Delete</button>
+                                        </td>
                                     </tr>
                                 ))}
-                                {fees.length === 0 && <tr><td colSpan="6" style={{ textAlign: 'center' }}>No fee records found.</td></tr>}
+                                {fees.length === 0 && <tr><td colSpan="7" style={{ textAlign: 'center' }}>No fee records found.</td></tr>}
                             </tbody>
                         </table>
                     )}
                 </div>
+
+                {/* Month/Year Filter for Fees */}
+                {activeTab === 'fees' && (
+                    <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', alignItems: 'center' }}>
+                        <div>
+                            <label style={{ fontSize: '0.9rem', marginRight: '0.5rem' }}>Month:</label>
+                            <select className="glass-input" style={{ width: '150px' }} value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)}>
+                                <option value="" style={{ color: 'black' }}>All</option>
+                                {['JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE', 'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER'].map(m => <option key={m} value={m} style={{ color: 'black' }}>{m}</option>)}
+                            </select>
+                        </div>
+                        <div>
+                            <label style={{ fontSize: '0.9rem', marginRight: '0.5rem' }}>Year:</label>
+                            <input type="number" className="glass-input" style={{ width: '100px' }} value={selectedYear} onChange={e => setSelectedYear(parseInt(e.target.value))} />
+                        </div>
+                    </div>
+                )}
 
                 {/* Modals */}
                 {showModal && (

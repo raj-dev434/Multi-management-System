@@ -78,6 +78,26 @@ com.company.dashboard
 ##  Database Design
 
 ### 1. Mechanical Stock Module
+
+## 🗄️ Database Setup
+
+For running locally or on a new machine, you need a PostgreSQL instance.
+
+1.  **Create Database**:
+    Run the following SQL command or use the provided script at `database/setup.sql`:
+    ```sql
+    CREATE DATABASE "MultiManagement";
+    ```
+2.  **Credentials**:
+    The application is configured to use the following default credentials (in `src/main/resources/application.properties`):
+    *   **Username**: `postgres`
+    *   **Password**: `postgres`
+    *   **Port**: `5432`
+
+3.  **Schema**:
+    Spring Boot is configured with `spring.jpa.hibernate.ddl-auto=update`. It will automatically create the required tables when the application starts.
+
+### 1. Mechanical Stock Module
 Designed to track inventory across specific physical locations (e.g., Racks).
 
 **Core Workflow:**

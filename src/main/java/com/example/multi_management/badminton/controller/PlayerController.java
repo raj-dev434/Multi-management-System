@@ -25,4 +25,14 @@ public class PlayerController {
     public List<PlayerFee> getAllFees() {
         return feeService.getAllFees();
     }
+
+    @GetMapping("/fees/monthly")
+    public List<PlayerFee> getFeesByMonth(@RequestParam String month, @RequestParam Integer year) {
+        return feeService.getFeesByMonth(month, year);
+    }
+
+    @DeleteMapping("/fee/{id}")
+    public void deleteFee(@PathVariable Long id) {
+        feeService.deleteFee(id);
+    }
 }
